@@ -7,6 +7,10 @@
     "start": "node src/backend/server.js",
     "dev": "nodemon src/backend/server.js",
     "test": "jest",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "test:e2e": "cross-env RUN_E2E_TESTS=true jest --testPathPattern=tests/e2e",
+    "test:coverage": "jest --coverage",
     "lint": "eslint .",
     "build:addin": "webpack --config webpack.addin.config.js"
   },
@@ -23,12 +27,17 @@
     "isomorphic-fetch": "^3.0.0",
     "node-cache": "^5.1.2",
     "office-js": "^1.1.0",
-    "openai": "^4.0.0"
+    "openai": "^4.0.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "axios": "^1.4.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.40.0",
     "jest": "^29.5.0",
     "nodemon": "^2.0.22",
+    "puppeteer": "^19.11.1",
+    "supertest": "^6.3.3",
     "webpack": "^5.82.1",
     "webpack-cli": "^5.1.1"
   },
