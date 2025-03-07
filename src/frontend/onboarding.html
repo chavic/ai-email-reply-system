@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Reply - Onboarding</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .step {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-right: 10px;
+        }
+        
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #2ecc71;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to AI Email Reply</h1>
+        <p>Follow these simple steps to set up your AI-powered email replies:</p>
+        
+        <div class="step">
+            <h2><span class="step-number">1</span> Connect your Office 365 account</h2>
+            <p>Connect your Office 365 account to enable AI-powered email replies. We'll only access your emails to help you draft better responses.</p>
+            <button id="connectOffice365" class="btn">Connect Office 365</button>
+            <div id="connectionStatus" style="display: none; margin-top: 10px;">
+                <p>✅ Connected successfully as <span id="userEmail"></span></p>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h2><span class="step-number">2</span> Install the Outlook Add-In</h2>
+            <p>Install our Outlook Add-In to get the "Get AI Reply" button directly in your email compose window.</p>
+            <button id="installAddin" class="btn" disabled>Install Add-In</button>
+            <p id="addinInstallFallback" style="display: none; margin-top: 10px;">
+                If you can't install the Add-In due to company policies, we'll automatically use the draft email fallback method instead.
+            </p>
+        </div>
+        
+        <div class="step">
+            <h2><span class="step-number">3</span> Configure preferences</h2>
+            <div class="toggle-container">
+                <label class="toggle">
+                    <input type="checkbox" id="notificationsToggle" checked>
+                    <span class="slider"></span>
+                </label>
+                <span>Email notifications when drafts are ready</span>
+            </div>
+        </div>
+        
+        <div>
+            <h2>How to use AI Email Reply</h2>
+            <p>Once setup is complete, you can:</p>
+            <ol>
+                <li>Reply to any email in Outlook</li>
+                <li>Click the "Get AI Reply" button in the compose window</li>
+                <li>Review and edit the AI-generated response</li>
+                <li>Send your email as usual</li>
+            </ol>
+            <p>If the Add-In isn't available, drafts will be automatically created in your Drafts folder.</p>
+        </div>
+    </div>
+    
+    <script>
+        // API endpoint
+        const API_BASE_URL = 'https://your-api-domain.com/api';
+        
+        // DOM elements
+        const connectButton = document.getElementById('connectOffice365');
+        const installAddinButton = document.getElementById('installAddin');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const userEmailSpan = document.getElementById('userEmail');
+        const addinInstallFallback = document.getElementById('addinInstallFallback');
+        const notificationsToggle = document.getElementById('notificationsToggle');
+        
+        // User data
+        let userId = '';
+        let userEmail = '';
+        
+        // Connect to Office 365
+        connectButton.addEventListener('click', async () => {
+            try {
+                // Get authorization URL
+                const authUrlResponse = await fetch(`${API_BASE_URL}/auth/authorize`);
+                const authUrlData = await authUrlResponse.json();
+                
+                // Open popup for auth flow
+                const authWindow = window.open(authUrlData.authUrl, '_blank', 'width=800,height=600');
+                
+                // Poll for auth completion
+                const checkAuth = setInterval(() => {
+                    try {
+                        if (authWindow.closed) {
+                            clearInterval(checkAuth);
+                            
+                            // Check URL params for auth code
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const code = urlParams.get('code');
+                            
+                            if (code) {
+                                // Exchange code for token
+                                exchangeCodeForToken(code);
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore cross-origin errors
+                    }
+                }, 500);
+            } catch (error) {
+                console.error('Failed to start auth flow:', error);
+                alert('Failed to connect to Office 365. Please try again.');
+            }
+        });
+        
+        // Exchange auth code for token
+        async function exchangeCodeForToken(code) {
+            try {
+                const tokenResponse = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+                
+                if (!tokenResponse.ok) {
+                    throw new Error('Token exchange failed');
+                }
+                
+                const userData = await tokenResponse.json();
+                
+                // Store user data
+                userId = userData.userId;
+                userEmail = userData.userEmail;
+                
+                // Update UI
+                userEmailSpan.textContent = userEmail;
+                connectionStatus.style.display = 'block';
+                connectButton.style.display = 'none';
+                installAddinButton.disabled = false;
+                
+                // Save user preferences
+                saveUserPreferences();
+            } catch (error) {
+                console.error('Failed to exchange code for token:', error);
+                alert('Authentication failed. Please try again.');
+            }
+        }
+        
+        // Install Add-In
+        installAddinButton.addEventListener('click', () => {
+            // Open Add-In installation instructions or direct install if possible
+            window.open('https://your-domain.com/addin/install-instructions.html', '_blank');
+            
+            // Show fallback option
+            addinInstallFallback.style.display = 'block';
+        });
+        
+        // Notification toggle
+        notificationsToggle.addEventListener('change', () => {
+            if (userId) {
+                saveUserPreferences();
+            }
+        });
+        
+        // Save user preferences
+        async function saveUserPreferences() {
+            if (!userId) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/preferences`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        notifications: notificationsToggle.checked
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to save preferences');
+                }
+            } catch (error) {
+                console.error('Failed to save preferences:', error);
+            }
+        }
+    </script>
+</body>
+</html>
